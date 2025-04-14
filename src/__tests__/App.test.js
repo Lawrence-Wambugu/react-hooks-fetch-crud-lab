@@ -4,6 +4,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
 } from "@testing-library/react";
 import "@testing-library/jest-dom/extend-expect";
@@ -27,7 +28,7 @@ test("displays question prompts after fetching", async () => {
 test("creates a new question when the form is submitted", async () => {
   render(<App />);
 
-  // wait for first render of list (otherwise we get a React state warning)
+  // wait for first render of list (avoiding React state warnings)
   await screen.findByText(/lorem testum 1/g);
 
   // click form page
@@ -78,17 +79,27 @@ test("deletes the question when the delete button is clicked", async () => {
 test("updates the answer when the dropdown is changed", async () => {
   const { rerender } = render(<App />);
 
+  // Show questions
   fireEvent.click(screen.queryByText(/View Questions/));
 
+  // Wait for the questions to load
   await screen.findByText(/lorem testum 2/g);
 
+  // Change the first dropdown's value (this triggers PATCH)
   fireEvent.change(screen.queryAllByLabelText(/Correct Answer/)[0], {
     target: { value: "3" },
   });
 
-  expect(screen.queryAllByLabelText(/Correct Answer/)[0].value).toBe("3");
+  // Wait for state to update after PATCH response
+  await waitFor(() => {
+    expect(screen.queryAllByLabelText(/Correct Answer/)[0].value).toBe("3");
+  });
 
+  // Trigger rerender
   rerender(<App />);
 
-  expect(screen.queryAllByLabelText(/Correct Answer/)[0].value).toBe("3");
+  // Wait for dropdown to reflect correctIndex = 3
+  await waitFor(() => {
+    expect(screen.queryAllByLabelText(/Correct Answer/)[0].value).toBe("3");
+  });
 });
